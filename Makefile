@@ -7,7 +7,8 @@ TARGET    := ircserv
 SRC_DIR   := srcs
 BUILD_DIR := build
 
-SRCS      := $(SRC_DIR)/main.cpp \
+#replace main.cpp after testing
+SRCS      := $(SRC_DIR)/test.cpp \
              $(SRC_DIR)/Server.cpp \
              $(SRC_DIR)/Client.cpp \
              $(SRC_DIR)/Channel.cpp
