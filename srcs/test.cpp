@@ -20,7 +20,7 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    int port = atoi(argv[1]);
+    int port = atoi(argv[1]); //have to change later for tighter checks!!!!
 
     int server_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (server_fd == -1)
@@ -29,17 +29,14 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    fcntl(server_fd, F_SETFL, O_NONBLOCK);
+    fcntl(server_fd, F_SETFL, O_NONBLOCK); //prevent blocking
 
     struct sockaddr_in server_addr;
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(port);
     server_addr.sin_addr.s_addr = INADDR_ANY;
 
-    int server_bind = bind(
-        server_fd,
-        reinterpret_cast<struct sockaddr*>(&server_addr),
-        sizeof(server_addr));
+    int server_bind = bind(server_fd, reinterpret_cast<struct sockaddr*>(&server_addr), sizeof(server_addr));
 
     if (server_bind == -1)
     {
@@ -86,10 +83,7 @@ int main(int argc, char **argv)
                     struct sockaddr_in client_addr;
                     socklen_t client_len = sizeof(client_addr);
 
-                    int client_fd = accept(
-                        server_fd,
-                        reinterpret_cast<struct sockaddr*>(&client_addr),
-                        &client_len);
+                    int client_fd = accept(server_fd, reinterpret_cast<struct sockaddr*>(&client_addr), &client_len);
 
                     if (client_fd != -1)
                     {
@@ -108,8 +102,7 @@ int main(int argc, char **argv)
 
                         fds.push_back(client_pollfd);
 
-                        std::cout << "Client connected: "
-                                  << host << std::endl;
+                        std::cout << "Client connected: " << host << std::endl;
                     }
 
                     ++i;
@@ -133,20 +126,15 @@ int main(int argc, char **argv)
 
                         client->appendRecvBuffer(buffer);
 
-                        std::cout << "Client sent [+]: "
-                                  << buffer << std::endl;
+                        std::cout << "Client sent [+]: " << buffer << std::endl;
 
-                        std::cout << "Client buffer: "
-                                  << client->getRecvBuffer()
-                                  << std::endl;
+                        std::cout << "Client buffer: " << client->getRecvBuffer() << std::endl;
 
                         ++i;
                     }
                     else if (n == 0)
                     {
-                        std::cout << "Client disconnected: "
-                                  << client->getNickname()
-                                  << std::endl;
+                        std::cout << "Client disconnected: " << client->getNickname() << std::endl;
 
                         delete client;
                         clients.erase(client_fd);
@@ -162,8 +150,7 @@ int main(int argc, char **argv)
                         }
                         else
                         {
-                            std::cout << "Client error: "
-                                      << client_fd << std::endl;
+                            std::cout << "Client error: " << client_fd << std::endl;
 
                             delete client;
                             clients.erase(client_fd);
@@ -181,8 +168,7 @@ int main(int argc, char **argv)
         }
     }
 
-    for (std::map<int, Client *>::iterator it = clients.begin();
-         it != clients.end(); ++it)
+    for (std::map<int, Client *>::iterator it = clients.begin(); it != clients.end(); ++it)
     {
         close(it->first);
         delete it->second;
