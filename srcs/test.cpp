@@ -1,5 +1,6 @@
 #include "../includes/Client.hpp"
 #include <iostream>
+#include <sstream>
 #include <vector>
 #include <map>
 #include <poll.h>
@@ -11,6 +12,15 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <cerrno>
+
+#include <cstdlib>
+
+std::string	intToString(int value)
+{
+	std::stringstream ss;
+	ss << value;
+	return ss.str();
+}
 
 int main(int argc, char **argv)
 {
@@ -92,6 +102,7 @@ int main(int argc, char **argv)
                         const char *host = inet_ntoa(client_addr.sin_addr);
 
                         Client *client = new Client(client_fd, host);
+			client->setNickname("Random" + intToString(std::rand() % 101));
                         clients[client_fd] = client;
 
                         struct pollfd client_pollfd;
@@ -102,7 +113,7 @@ int main(int argc, char **argv)
 
                         fds.push_back(client_pollfd);
 
-                        std::cout << "Client connected: " << host << std::endl;
+                        std::cout << "A new Client connected to: " << host << std::endl;
                     }
 
                     ++i;
@@ -125,11 +136,7 @@ int main(int argc, char **argv)
                         buffer[n] = '\0';
 
                         client->appendRecvBuffer(buffer);
-
-                        std::cout << "Client sent [+]: " << buffer << std::endl;
-
-                        std::cout << "Client buffer: " << client->getRecvBuffer() << std::endl;
-
+                        std::cout << "Client " << client->getNickname() << ": " << client->getRecvBuffer();
                         ++i;
                     }
                     else if (n == 0)
