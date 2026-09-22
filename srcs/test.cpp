@@ -125,11 +125,7 @@ int main(int argc, char **argv)
 
                     char buffer[1024];
 
-                    int n = recv(
-                        client_fd,
-                        buffer,
-                        sizeof(buffer) - 1,
-                        0);
+                    int n = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
 
                     if (n > 0)
                     {

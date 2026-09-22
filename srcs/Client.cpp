@@ -128,3 +128,4 @@ void Client::resetAttempt()
 {
     _passAttempts = 0;
 }
+

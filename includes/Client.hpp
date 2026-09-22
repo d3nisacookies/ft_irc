@@ -20,7 +20,7 @@ class Client
         
         std::string                 _nickname;
         std::string                 _username;
-
+ 
         std::vector<Channel *>      _channels;
 
         int                         _passAttempts;
