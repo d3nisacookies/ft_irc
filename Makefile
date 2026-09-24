@@ -1,6 +1,6 @@
 CXX      := c++
 
-CXXFLAGS := -Wall -Wextra -Werror -std=c++98
+CXXFLAGS := -Wall -Wextra -Werror -std=c++98 -g
 INCLUDES := -Iincludes
 
 TARGET    := ircserv
@@ -8,7 +8,7 @@ SRC_DIR   := srcs
 BUILD_DIR := build
 
 #replace main.cpp after testing
-SRCS      := $(SRC_DIR)/channel_tester.cpp \
+SRCS      := $(SRC_DIR)/main.cpp \
              $(SRC_DIR)/Server.cpp \
              $(SRC_DIR)/Client.cpp \
              $(SRC_DIR)/Channel.cpp

@@ -14,6 +14,7 @@
 #include <cerrno>
 
 #include <cstdlib>
+#define WELCOME "Welcome to IRC server: authenticate with\nusername:password\n"
 
 std::string	intToString(int value)
 {

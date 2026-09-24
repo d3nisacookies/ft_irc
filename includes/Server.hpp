@@ -2,24 +2,43 @@
 
 #include <vector>
 #include <map>
+#include <iostream>
+#include <sstream>
+#include <poll.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <cerrno>
 
 #include "Client.hpp"
 #include "Channel.hpp"
-
+#define WELCOME "Welcome to IRC server\n"
 class Server
 {
     private:
         int _port;
-        std::string _password;
-
-        std::vector<Client *> _clients;
+        int _server_fd;
+        std::vector<struct pollfd> _all_fds;
+        const std::string _password;
+        std::map<int, Client *> _clients;
         std::map<std::string, Channel *> _channels;
     public:
         Server(int port, const std::string& password);
+        bool    start( void );
         ~Server(); // server owns client and channel so need to destroy them
 
+        //Socket 
+        bool    server_listen( void );
+        void genNewPollfd( const int client_fd );
+        void    wait_poll( void );
+        bool    bind_socket( void );
+        void    ValidateNewClient( void );
         // Client management
-        void addClient(Client* client);
+        void handleClient( const int client_fd , size_t &index );
         void removeClient(Client* client); // leave all channel, remove client from all channel, remove from server, destroy client
         Client* findClientFd(int fd);
         Client* findClientNickname(std::string name); // client cannot have same nickName
