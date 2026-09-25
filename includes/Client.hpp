@@ -37,6 +37,7 @@ class Client
         bool isPassVerified() const;
         bool hasNickname() const;
         bool hasUsername() const;
+        bool extractLine(std::string& line);
 
         const std::string& getNickname() const;
         const std::string& getUsername() const;

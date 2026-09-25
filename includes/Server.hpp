@@ -13,6 +13,8 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <cerrno>
+#include <exception>
+#include <cctype>
 
 #include "Client.hpp"
 #include "Channel.hpp"
@@ -27,7 +29,8 @@ class Server
         std::map<int, Client *> _clients;
         std::map<std::string, Channel *> _channels;
     public:
-        Server(int port, const std::string& password);
+        Server(const std::string& port, const std::string& password);
+        static int parsePort(const std::string& port);
         bool    start( void );
         ~Server(); // server owns client and channel so need to destroy them
 
@@ -53,6 +56,17 @@ class Server
         const std::string& getPwd() const;
 
         void setPwd(std::string password);
+
+        class InvalidPortException : public std::exception
+        {
+            public:
+                virtual const char* what() const throw();
+        };
+        class InvalidPasswordException : public std::exception 
+        {
+            public:
+                virtual const char* what() const throw();
+        };
 };
 
 

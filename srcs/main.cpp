@@ -5,10 +5,22 @@
 #include <stdio.h>
 #include <Server.hpp>
 
-int main()
+int main(int ac, char **av)
 {
-    Server *new_server = new Server(8080, "hello");
-    std::cout << new_server << std::endl;
-    if (!(new_server->start()))
-        std::cerr << "Server start failed" << std::endl;
+    if (ac != 3)
+    {
+        std::cerr << "Usage: ./ircserv <port> <password>" << std::endl;
+        return 1;
+    }
+    try
+    {
+        Server server(av[1], av[2]);
+        server.start();
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return 1;
+    }
+    return (0);
 }

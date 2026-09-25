@@ -2,9 +2,44 @@
 #include "Client.hpp"
 #include "Channel.hpp"
 
-Server::Server(int port, const std::string& password) 
-    : _port(port), _server_fd(-1), _password(password)
+const char* Server::InvalidPortException::what() const throw()
 {
+    return ("Invalid Port: must be a number between 1024 and 65535");
+}
+
+const char* Server::InvalidPasswordException::what() const throw()
+{
+    return ("Invalid Password: Use a better one.");
+}
+
+int Server::parsePort(const std::string& port)
+{
+    long value = 0;
+    if (port.empty())
+        throw InvalidPortException();
+    for (std::size_t i = 0; i < port.size(); ++i)
+    {
+        if (!std::isdigit(static_cast<unsigned char>(port[i])))
+            throw InvalidPortException();
+        value =  value * 10 + (port[i] - '0');
+        if (value > 65535)
+            throw InvalidPortException();
+    }
+    if (value < 1024)
+        throw InvalidPortException();
+    return static_cast<int>(value);
+}
+
+Server::Server(const std::string& port, const std::string& password) 
+    : _port(parsePort(port)), _server_fd(-1), _password(password)
+{
+    if (password.empty())
+        throw InvalidPasswordException();
+    for (size_t i = 0; i < password.size(); ++i)
+    {
+        if (std::isspace(static_cast<unsigned char>(password[i])) || std::iscntrl(static_cast<unsigned char>(password[i])))
+            throw InvalidPasswordException();
+    }
 }
 
 std::string	intToString(int value)
@@ -29,7 +64,7 @@ bool    Server::bind_socket( void )
     if (_server_fd == -1)
     {
         perror("Error making socket.");
-        return -1;
+        return false;
     }
     fcntl(_server_fd, F_SETFL, O_NONBLOCK); //prevent blocking
 
@@ -44,9 +79,9 @@ bool    Server::bind_socket( void )
     {
         perror("Error server binding");
         close(_server_fd);
-        return 0;
+        return false;
     }
-    return 1;
+    return true;
 }
 
 bool    Server::server_listen( void )
@@ -68,19 +103,13 @@ void    Server::ValidateNewClient( void )
     socklen_t client_len = sizeof(client_addr);
 
     int client_fd = accept(_server_fd, reinterpret_cast<struct sockaddr*>(&client_addr), &client_len);
-/* Authenticate here
-    send(client_fd, WELCOME, sizeof(WELCOME), 0);  
-    char buffer[128];
-    int n = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
-    if (buffer)
-*/
-    send(client_fd, WELCOME, sizeof(WELCOME), 0);
+    //authenticate
     if (client_fd != -1)
     {
         fcntl(client_fd, F_SETFL, O_NONBLOCK);
         const char *host = inet_ntoa(client_addr.sin_addr);
         Client *client = new Client(client_fd, host);
-	    client->setNickname("Random" + intToString(std::rand() % 101));
+	   
         _clients[client_fd] = client;
 
         std::cout << "Client named " << _clients[client_fd]->getNickname()
@@ -96,8 +125,17 @@ void    Server::handleClient( const int client_fd , size_t &index)
     int n = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
     if (n > 0)
     {
-        buffer[n] = '\0';
-        std::cout << buffer << std::endl;
+        Client* client = _clients[client_fd];
+        client->appendRecvBuffer(std::string(buffer, n));
+
+        std::string line;
+        while (client->extractLine(line))
+        {
+            if (line.empty())
+                continue;
+            std::cout << "[" << client_fd << "] line: '" << line << "'" << std::endl; //temp
+            //buid IRCMessage and give to command Handler.
+        }
         ++index;
     }
     else if (n == 0)
@@ -170,3 +208,4 @@ bool    Server::start( void )
 }
 
 Server::~Server() {}
+

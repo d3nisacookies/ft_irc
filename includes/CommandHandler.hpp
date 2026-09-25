@@ -2,7 +2,7 @@
 
 #include "Server.hpp"
 #include "Client.hpp"
-#include "IRCMsgParser.hpp"
+#include "IRCMessage.hpp"
 
 #include <vector>
 #include <string>
@@ -22,17 +22,17 @@ class CommandHandler
         CommandHandler(Server* server);
         ~CommandHandler();
 
-        std::vector<Response> processCommand(Client* client, const IRCMsgParser* irc_msg);
-        void passCmd(Client* client, const IRCMsgParser* irc_msg);
-        void nickCmd(Client* client, const IRCMsgParser* irc_msg);
-        void userCmd(Client* client, const IRCMsgParser* irc_msg);
-        void joinCmd(Client* client, const IRCMsgParser* irc_msg);
-        void partCmd(Client* client, const IRCMsgParser* irc_msg);
-        void privmsgCmd(Client* client, const IRCMsgParser* irc_msg);
-        void kickCmd(Client* client, const IRCMsgParser* irc_msg);
-        void inviteCmd(Client* client, const IRCMsgParser* irc_msg);
-        void topicCmd(Client* client, const IRCMsgParser* irc_msg);
-        void modeCmd(Client* client, const IRCMsgParser* irc_msg);
+        std::vector<Response> processCommand(Client* client, const IRCMessage* irc_msg);
+        void passCmd(Client* client, const IRCMessage* irc_msg);
+        void nickCmd(Client* client, const IRCMessage* irc_msg);
+        void userCmd(Client* client, const IRCMessage* irc_msg);
+        void joinCmd(Client* client, const IRCMessage* irc_msg);
+        void partCmd(Client* client, const IRCMessage* irc_msg);
+        void privmsgCmd(Client* client, const IRCMessage* irc_msg);
+        void kickCmd(Client* client, const IRCMessage* irc_msg);
+        void inviteCmd(Client* client, const IRCMessage* irc_msg);
+        void topicCmd(Client* client, const IRCMessage* irc_msg);
+        void modeCmd(Client* client, const IRCMessage* irc_msg);
         
         
         /*

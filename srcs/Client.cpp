@@ -119,6 +119,18 @@ void Client::removeChannel(Channel *channel)
         _channels.erase(it);
 }
 
+bool Client::extractLine(std::string& line)
+{
+    std::string::size_type pos = _recvBuffer.find('\n');
+    if (pos == std::string::npos)
+        return false;
+    line = _recvBuffer.substr(0, pos);
+    _recvBuffer.erase(0, pos + 1);
+    if (!line.empty() && line[line.size() - 1] == '\r')
+        line.erase(line.size() - 1);
+    return true;
+}
+
 void Client::increaseAttempt()
 {
     ++_passAttempts;

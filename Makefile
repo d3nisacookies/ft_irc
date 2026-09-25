@@ -11,7 +11,8 @@ BUILD_DIR := build
 SRCS      := $(SRC_DIR)/main.cpp \
              $(SRC_DIR)/Server.cpp \
              $(SRC_DIR)/Client.cpp \
-             $(SRC_DIR)/Channel.cpp
+             $(SRC_DIR)/Channel.cpp \
+             $(SRC_DIR)/IRCMessage.cpp
 
 OBJS      := $(SRCS:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)
 
