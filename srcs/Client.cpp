@@ -17,6 +17,14 @@ Client::Client(int fd, const std::string& host)
 
 Client::~Client(){}
 
+Client::AuthStatus Client::getStatus() const {
+    return this->_status;
+}
+
+void Client::setStatus(AuthStatus newStatus) {
+    this->_status = newStatus;
+}
+
 int Client::getFd() const
 {
     return _fd;

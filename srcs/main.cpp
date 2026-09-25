@@ -15,6 +15,7 @@ int main(int ac, char **av)
     try
     {
         Server server(av[1], av[2]);
+        std::cout << &server << std::endl;
         server.start();
     }
     catch (const std::exception& e)

@@ -18,7 +18,14 @@
 
 #include "Client.hpp"
 #include "Channel.hpp"
+#include "IRCMessage.hpp"
+
+#define SUCCESS_U "Username set successfully!\n"
+#define SUCCESS_P "Password authenticated successfully!\n"
+#define UEXIST "Username exist!\n"
+#define WPASS "Wrong Password\n"
 #define WELCOME "Welcome to IRC server\n"
+#define INFO "PASS <password> to connect to server.\nUSER <username> to set nickname.\n"
 class Server
 {
     private:
@@ -27,6 +34,7 @@ class Server
         std::vector<struct pollfd> _all_fds;
         const std::string _password;
         std::map<int, Client *> _clients;
+        std::map<std::string, Client *> _clients_byname;
         std::map<std::string, Channel *> _channels;
     public:
         Server(const std::string& port, const std::string& password);
@@ -39,10 +47,12 @@ class Server
         void genNewPollfd( const int client_fd );
         void    wait_poll( void );
         bool    bind_socket( void );
+        void    authenticateClient( int client_fd );
         void    ValidateNewClient( void );
         // Client management
+        bool usernameExist(  const std::string& new_nick );
         void handleClient( const int client_fd , size_t &index );
-        void removeClient(Client* client); // leave all channel, remove client from all channel, remove from server, destroy client
+        void removeClient( int fd ); // leave all channel, remove client from all channel, remove from server, destroy client
         Client* findClientFd(int fd);
         Client* findClientNickname(std::string name); // client cannot have same nickName
  

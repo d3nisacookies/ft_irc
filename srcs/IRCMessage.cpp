@@ -1,11 +1,15 @@
 #include "../includes/IRCMessage.hpp"
 
+IRCMessage::IRCMessage( )
+{
+}
+
 IRCMessage::IRCMessage(const std::string& raw)
 {
     parse(raw);
 }
 
-void IRCMessage::parse(const std::string& raw)
+void    IRCMessage::parse(const std::string& raw)
 {
     std::size_t pos = 0;
     std::size_t start;

@@ -9,7 +9,15 @@ class Channel;
 
 class Client
 {
+    public:
+            enum AuthStatus
+            {
+                WAITING_FOR_PASS,
+                WAITING_FOR_NICK_USER,
+                AUTHENTICATED
+            };
     private:
+        AuthStatus                  _status;
         int                         _fd;
         std::string                 _host;
         std::string                 _recvBuffer;
@@ -29,6 +37,8 @@ class Client
         Client(int fd, const std::string& host);
         ~Client();
 
+        AuthStatus  getStatus() const;
+        void        setStatus(AuthStatus newStatus);
         int getFd() const;
         const std::string& getHost() const;
         const std::string& getRecvBuffer()const;

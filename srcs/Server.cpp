@@ -97,54 +97,119 @@ bool    Server::server_listen( void )
     return 1;
 }
 
+bool    Server::usernameExist( const std::string& new_nick )
+{
+    std::map<std::string, Client*>::const_iterator it = _clients_byname.find(new_nick);
+    return (it != _clients_byname.end());
+}
+
+void    Server::authenticateClient( int client_fd )
+{
+    IRCMessage pass_parser = IRCMessage();
+    IRCMessage user_parser = IRCMessage();
+    Client* client = _clients[client_fd];
+
+    std::string line;
+    while (client->extractLine(line))
+    {
+        if (line.empty())
+            continue;
+        else if (line.find("PASS") != std::string::npos)
+            pass_parser.parse(line);
+        else if (line.find("USER") != std::string::npos)
+            user_parser.parse(line);
+    }
+    if (_clients[client_fd]->getStatus() == Client::WAITING_FOR_PASS)
+    {
+        if (!pass_parser.getParams().empty() && pass_parser.getParams().front() == _password)
+        {    
+            _clients[client_fd]->setStatus(Client::WAITING_FOR_NICK_USER);
+            send(client_fd, SUCCESS_P, sizeof(SUCCESS_P), 0);
+        }
+        else
+        {
+            send(client_fd, WPASS, sizeof(WPASS), 0);
+            return ;
+        }
+    }
+    if (_clients[client_fd]->getStatus() == Client::WAITING_FOR_NICK_USER)
+    {
+        if (!user_parser.getParams().empty())
+        {
+            if (!usernameExist(user_parser.getParams().front())) 
+            {
+                _clients[client_fd]->setStatus(Client::AUTHENTICATED);
+                _clients[client_fd]->setNickname(user_parser.getParams().front());
+                send(client_fd, SUCCESS_U, sizeof(SUCCESS_U), 0);
+            }    
+            else
+                send(client_fd, UEXIST, sizeof(UEXIST), 0);
+    
+        }
+    }
+}
+
 void    Server::ValidateNewClient( void )
 {
     struct sockaddr_in client_addr;
     socklen_t client_len = sizeof(client_addr);
 
     int client_fd = accept(_server_fd, reinterpret_cast<struct sockaddr*>(&client_addr), &client_len);
-    //authenticate
     if (client_fd != -1)
     {
         fcntl(client_fd, F_SETFL, O_NONBLOCK);
+        send(client_fd, WELCOME, sizeof(WELCOME), 0);
+        send(client_fd, INFO, sizeof(INFO), 0);
         const char *host = inet_ntoa(client_addr.sin_addr);
         Client *client = new Client(client_fd, host);
-	   
+	    client->setStatus(Client::WAITING_FOR_PASS);
         _clients[client_fd] = client;
-
-        std::cout << "Client named " << _clients[client_fd]->getNickname()
-         << " connected from ip : " << host << std::endl;
         genNewPollfd( client_fd );
-    }
-    
+    } 
 }
+
+void    Server::removeClient(int fd)
+{
+    Client* client = _clients[fd];
+    if (client != NULL) {
+        _clients_byname.erase(client->getNickname());
+        _clients.erase(fd);      
+        delete client;
+    }
+}
+
 
 void    Server::handleClient( const int client_fd , size_t &index)
 {
     char buffer[1024];
     int n = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
-    if (n > 0)
+    if (n == 0)
+    {
+        std::cout << _clients[client_fd]->getNickname() << " just disconnected." << std::endl;
+        removeClient(client_fd);
+        close(client_fd);
+        _all_fds.erase(_all_fds.begin() + index);
+    }
+    else if (n > 0)
     {
         Client* client = _clients[client_fd];
         client->appendRecvBuffer(std::string(buffer, n));
 
-        std::string line;
-        while (client->extractLine(line))
+        if (_clients[client_fd]->getStatus() != Client::AUTHENTICATED)
         {
-            if (line.empty())
-                continue;
-            std::cout << "[" << client_fd << "] line: '" << line << "'" << std::endl; //temp
-            //buid IRCMessage and give to command Handler.
+            authenticateClient( client_fd );
+            
         }
         ++index;
-    }
-    else if (n == 0)
-    {
-        std::cout << _clients[client_fd]->getNickname() << " just disconnected." << std::endl;
-        delete _clients[client_fd];
-        _clients.erase(client_fd);
-        close(client_fd);
-        _all_fds.erase(_all_fds.begin() + index);
+    // }
+    //     while (client->extractLine(line))
+    //     {
+    //         if (line.empty())
+    //             continue;
+    //         std::cout << "[" << client_fd << "] line: '" << line << "'" << std::endl; //temp
+    //         //buid IRCMessage and give to command Handler.
+    //     }
+    //     ++index;
     }
     else
     {
