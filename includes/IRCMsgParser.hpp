@@ -7,8 +7,14 @@
 class IRCMsgParser
 {
     private:
-                // "PRIVMSG #42 :Hello Bob!"
-        std::string _command; // PRIVMSG
-        std::string _parameter; // #42
-        std::string _trailing;  // Hello Bob!
+        // "PRIVMSG #42 :Hello Bob!"
+        // Pass mypassword
+        std::string _command; // PRIVMSG // Pass
+        std::string _parameter; // #42 // mypassword
+        std::string _trailing;  // Hello Bob! // ""
+
+    public:
+        const std::string& getCommand() const;
+        const std::string& getParameters() const;
+        const std::string& getTrailing()const;
 };
