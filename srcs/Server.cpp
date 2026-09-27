@@ -97,10 +97,10 @@ bool    Server::server_listen( void )
     return 1;
 }
 
-bool    Server::usernameExist( const std::string& new_nick )
+bool    Server::nicknameExist( const std::string& new_nick )
 {
-    std::map<std::string, Client*>::const_iterator it = _clients_byname.find(new_nick);
-    return (it != _clients_byname.end());
+    std::map<std::string, Client*>::const_iterator it = _clients_byNickname.find(new_nick);
+    return (it != _clients_byNickname.end());
 }
 
 void    Server::authenticateClient( int client_fd )
@@ -136,7 +136,7 @@ void    Server::authenticateClient( int client_fd )
     {
         if (!user_parser.getParams().empty())
         {
-            if (!usernameExist(user_parser.getParams().front())) 
+            if (!nicknameExist(user_parser.getParams().front())) 
             {
                 _clients[client_fd]->setStatus(Client::AUTHENTICATED);
                 _clients[client_fd]->setNickname(user_parser.getParams().front());
@@ -172,7 +172,7 @@ void    Server::removeClient(int fd)
 {
     Client* client = _clients[fd];
     if (client != NULL) {
-        _clients_byname.erase(client->getNickname());
+        _clients_byNickname.erase(client->getNickname());
         _clients.erase(fd);      
         delete client;
     }
@@ -274,3 +274,25 @@ bool    Server::start( void )
 
 Server::~Server() {}
 
+const std::string& Server::getPwd() const
+{
+    return _password;
+}
+
+Client* Server::findClientFd(int fd)
+{
+    // return ;
+}
+
+Client* Server::findClientNickname(std::string name)
+{
+    // return ;
+}
+
+void Server::setClientNickname(Client* client, const std::string& nickname)
+{
+    if (client->hasNickname())
+        _clients_byNickname.erase(client->getNickname());
+    client->setNickname(nickname);
+    _clients_byNickname[nickname] = client;
+}

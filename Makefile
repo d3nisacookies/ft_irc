@@ -1,22 +1,25 @@
-CXX      := c++
+CXX := c++
 
-CXXFLAGS := -Wall -Wextra -Werror -std=c++98 -g
+# CXXFLAGS := -Wall -Wextra -Werror -std=c++98 -g
+CXXFLAGS := -std=c++98 -g
+
 INCLUDES := -Iincludes
 
-TARGET    := ircserv
-SRC_DIR   := srcs
+TARGET := ircserv
+
+SRC_DIR := srcs
 BUILD_DIR := build
 
-#replace main.cpp after testing
-SRCS      := $(SRC_DIR)/main.cpp \
-             $(SRC_DIR)/Server.cpp \
-             $(SRC_DIR)/Client.cpp \
-             $(SRC_DIR)/Channel.cpp \
-             $(SRC_DIR)/IRCMessage.cpp
+SRCS := $(SRC_DIR)/main.cpp \
+        $(SRC_DIR)/Server.cpp \
+        $(SRC_DIR)/Client.cpp \
+        $(SRC_DIR)/Channel.cpp \
+        $(SRC_DIR)/IRCMessage.cpp \
+        $(SRC_DIR)/CommandHandler.cpp
 
-OBJS      := $(SRCS:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)
+OBJS := $(SRCS:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)
 
-DEPS      := $(OBJS:.o=.d)
+DEPS := $(OBJS:.o=.d)
 
 all: $(TARGET)
 

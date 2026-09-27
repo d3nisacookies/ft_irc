@@ -2,7 +2,8 @@
 #include <algorithm>
 
 Client::Client(int fd, const std::string& host)
-    : _fd(fd),
+    : _status(WAITING_FOR_PASS),
+      _fd(fd),
       _host(host),
       _recvBuffer(""),
       _passVerified(false),

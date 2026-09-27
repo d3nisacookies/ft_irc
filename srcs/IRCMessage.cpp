@@ -9,6 +9,10 @@ IRCMessage::IRCMessage(const std::string& raw)
     parse(raw);
 }
 
+
+// Notes for AK
+// parser need to reset the _params once done with the command
+// need to handle empty command
 void    IRCMessage::parse(const std::string& raw)
 {
     std::size_t pos = 0;

@@ -34,7 +34,7 @@ class Server
         std::vector<struct pollfd> _all_fds;
         const std::string _password;
         std::map<int, Client *> _clients;
-        std::map<std::string, Client *> _clients_byname;
+        std::map<std::string, Client *> _clients_byNickname;
         std::map<std::string, Channel *> _channels;
     public:
         Server(const std::string& port, const std::string& password);
@@ -50,12 +50,13 @@ class Server
         void    authenticateClient( int client_fd );
         void    ValidateNewClient( void );
         // Client management
-        bool usernameExist(  const std::string& new_nick );
+        bool nicknameExist(  const std::string& new_nick );
         void handleClient( const int client_fd , size_t &index );
         void removeClient( int fd ); // leave all channel, remove client from all channel, remove from server, destroy client
         Client* findClientFd(int fd);
         Client* findClientNickname(std::string name); // client cannot have same nickName
- 
+        void setClientNickname(Client* client, const std::string& nickname);
+
         // Channel management
         void addChannel(std::string name, Channel* channel);
         void removeChannel(Channel* channel); // if empty, remove channel

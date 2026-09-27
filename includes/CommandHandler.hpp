@@ -33,7 +33,7 @@ class CommandHandler
         void inviteCmd(Client* client, const IRCMessage* irc_msg, std::vector<Response>& response);
         void topicCmd(Client* client, const IRCMessage* irc_msg, std::vector<Response>& response);
         void modeCmd(Client* client, const IRCMessage* irc_msg, std::vector<Response>& response);
-        
+        void addResponse(Client* client, const std::string& message, std::vector<Response>& response)
         
         /*
     Reference/pointer to Server
