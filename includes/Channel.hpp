@@ -42,7 +42,7 @@ class Channel {
 
         // i
         bool isInviteOnly() const;
-        void changeInviteStatus();
+        void changeInviteStatus(bool status);
         
         void addInvitedClient(Client* member);
         void removeInvitedClient(Client* member);
@@ -50,7 +50,7 @@ class Channel {
 
         // t
         bool isTopicRestricted() const;
-        void changeTopicRestriction();
+        void changeTopicRestriction(bool status);
         
         // k
         bool isKey() const;
@@ -59,7 +59,7 @@ class Channel {
 
         // l
         bool isUserLimitEnable() const;
-        void changeLimit(long long amount);
+        void changeLimit(int amount);
         void disableLimit();
 
         // o
@@ -74,6 +74,7 @@ class Channel {
         const std::string& getName() const;
         const std::string& getTopic() const;
         const std::set<Client *>& getMembers() const;
+        const std::set<Client *>& getOperators() const;
         const std::string& getKey() const;
         const int& getLimit() const;
 };

@@ -281,12 +281,24 @@ const std::string& Server::getPwd() const
 
 Client* Server::findClientFd(int fd)
 {
+    // if cannot find return NULL 
     // return ;
 }
 
 Client* Server::findClientNickname(std::string name)
 {
+     // if cannot find return NULL 
     // return ;
+}
+
+Channel* Server::findChannel(std::string name)
+{
+    // if cannot find return NULL 
+}
+
+void Server::removeChannel(Channel* channel)
+{
+    
 }
 
 void Server::setClientNickname(Client* client, const std::string& nickname)

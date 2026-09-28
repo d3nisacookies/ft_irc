@@ -5,7 +5,7 @@
 
 Channel::Channel(const std::string& name) 
     : _name(name), _inviteOnly(false), _topicRestriction(false), 
-        _hasKey(false), _userLimitEnable(false) {}
+        _hasKey(false), _userLimitEnable(false), _userLimit(0) {}
 
 Channel::~Channel() {}
 
@@ -18,8 +18,8 @@ void Channel::addMember(Client* member) {
 
 void Channel::removeMember(Client* member) {
     _members.erase(member);
-    if (_operators.find(member) != _operators.end())
-        _operators.erase(member);
+    _operators.erase(member);
+    _invitedMembers.erase(member);
 }
 
 bool Channel::isMember(Client* member) {
@@ -28,20 +28,20 @@ bool Channel::isMember(Client* member) {
     return false;
 }
 
-
 bool Channel::isInviteOnly() const
 {
     return _inviteOnly;
 }
 
-void Channel::changeInviteStatus()
+void Channel::changeInviteStatus(bool status)
 {
-    _inviteOnly = !_inviteOnly;
+    _inviteOnly = status;
 }
 
 void Channel::addInvitedClient(Client* member)
 {
-    _invitedMembers.insert(member);
+    if(member != NULL)
+        _invitedMembers.insert(member);
 }
 
 void Channel::removeInvitedClient(Client* member)
@@ -62,9 +62,9 @@ bool Channel::isTopicRestricted() const
     return _topicRestriction;
 }
 
-void Channel::changeTopicRestriction()
+void Channel::changeTopicRestriction(bool status)
 {
-    _topicRestriction = !_topicRestriction;
+    _topicRestriction = status;
 }
 
 bool Channel::isKey() const
@@ -81,6 +81,7 @@ void Channel::changeKey(std::string password)
 void Channel::disableKey()
 {
     _hasKey = false;
+    _key.clear();
 }
 
 bool Channel::isUserLimitEnable() const
@@ -88,15 +89,11 @@ bool Channel::isUserLimitEnable() const
     return _userLimitEnable;
 }
 
-void Channel::changeLimit(long long amount)
+void Channel::changeLimit(int amount)
 {
-    if(amount > INT_MAX - 1)
-    {
-        std::cout << "User limit exceeded." << std::endl;
+    if (amount <= 0)
         return;
-    }
-    if (amount < 0)
-        return;
+
     _userLimitEnable = true;
     _userLimit = amount;
 }
@@ -106,11 +103,16 @@ void Channel::disableLimit()
     _userLimitEnable = false;
 }
 
-void Channel::addOp(Client* op) {
-    if(_members.find(op) != _members.end())
+void Channel::addOp(Client* op)
+{
+    if (op == NULL)
+        return;
+
+    if (_members.find(op) != _members.end())
         _operators.insert(op);
     else
-        std::cout << op->getHost() << " is not a member." << std::endl;
+        std::cout << op->getHost()
+            << " is not a member." << std::endl;
 }
 
 void Channel::removeOp(Client* op) {
@@ -137,6 +139,11 @@ const std::string& Channel::getTopic() const {
 
 const std::set<Client *>& Channel::getMembers() const {
     return _members;
+}
+
+const std::set<Client *>& Channel::getOperators() const
+{
+    return _operators;
 }
 
 const std::string& Channel::getKey() const
