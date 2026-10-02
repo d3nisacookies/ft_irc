@@ -9,15 +9,7 @@ class Channel;
 
 class Client
 {
-    public:
-            enum AuthStatus
-            {
-                WAITING_FOR_PASS,
-                WAITING_FOR_NICK_USER,
-                AUTHENTICATED
-            };
     private:
-        AuthStatus                  _status;
         int                         _fd;
         std::string                 _host;
         std::string                 _recvBuffer;
@@ -25,6 +17,7 @@ class Client
         bool                        _passVerified;
         bool                        _hasNickname;
         bool                        _hasUsername;
+        bool                        _welcomed;
         
         std::string                 _nickname;
         std::string                 _username;
@@ -37,8 +30,6 @@ class Client
         Client(int fd, const std::string& host);
         ~Client();
 
-        AuthStatus  getStatus() const;
-        void        setStatus(AuthStatus newStatus);
         int getFd() const;
         const std::string& getHost() const;
         const std::string& getRecvBuffer()const;
@@ -48,6 +39,8 @@ class Client
         bool hasNickname() const;
         bool hasUsername() const;
         bool extractLine(std::string& line);
+        bool isWelcomed() const;
+        void setWelcomed(bool welcomed);
 
         const std::string& getNickname() const;
         const std::string& getUsername() const;

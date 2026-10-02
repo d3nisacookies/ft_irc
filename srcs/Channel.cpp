@@ -5,7 +5,7 @@
 
 Channel::Channel(const std::string& name) 
     : _name(name), _inviteOnly(false), _topicRestriction(false), 
-        _hasKey(false), _userLimitEnable(false), _userLimit(0) {}
+        _hasKey(false),  _userLimit(0), _userLimitEnable(false) {}
 
 Channel::~Channel() {}
 

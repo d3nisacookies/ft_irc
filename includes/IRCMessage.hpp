@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <vector>
+#include <cctype>
 
 
 class IRCMessage
@@ -15,5 +16,6 @@ class IRCMessage
                 void parse(const std::string& raw);
                 const std::string& getCommand() const;
                 const std::vector<std::string>& getParams()const ;
+                bool isEmpty() const;
 
 };

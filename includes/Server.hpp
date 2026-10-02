@@ -20,12 +20,12 @@
 #include "Channel.hpp"
 #include "IRCMessage.hpp"
 
-#define SUCCESS_U "Username set successfully!\n"
-#define SUCCESS_P "Password authenticated successfully!\n"
-#define UEXIST "Username exist!\n"
-#define WPASS "Wrong Password\n"
-#define WELCOME "Welcome to IRC server\n"
-#define INFO "PASS <password> to connect to server.\nUSER <username> to set nickname.\n"
+// #define SUCCESS_U "Username set successfully!\n"
+// #define SUCCESS_P "Password authenticated successfully!\n"
+// #define UEXIST "Username exist!\n"
+// #define WPASS "Wrong Password\n"
+// #define WELCOME "Welcome to IRC server\n"
+// #define INFO "PASS <password> to connect to server.\nUSER <username> to set nickname.\n"
 class Server
 {
     private:
@@ -47,7 +47,6 @@ class Server
         void genNewPollfd( const int client_fd );
         void    wait_poll( void );
         bool    bind_socket( void );
-        void    authenticateClient( int client_fd );
         void    ValidateNewClient( void );
         // Client management
         bool nicknameExist(  const std::string& new_nick );

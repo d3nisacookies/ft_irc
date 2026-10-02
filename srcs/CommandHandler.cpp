@@ -11,6 +11,9 @@ std::vector<Response> CommandHandler::processCommand(Client* client, const IRCMe
 {
     std::vector<Response> response_msg;
 
+    if (irc_msg->isEmpty())
+        return response_msg;
+
     std::string commands[10] = {"PASS", "NICK", "USER", "JOIN", "PART",
         "PRIVMSG", "KICK", "INVITE", "TOPIC", "MODE"};
 
@@ -33,6 +36,12 @@ std::vector<Response> CommandHandler::processCommand(Client* client, const IRCMe
         if (commands[i] == irc_msg->getCommand())
         {
             (this->*functions[i])(client, irc_msg, response_msg);
+            if (client->isRegistered() && !(client->isWelcomed()))
+            {
+                client->setWelcomed(true);
+                addResponse(client, ":ircserv 001 " + client->getNickname() + " :Welcome to the IRC Network " + getClientPrefix(client).substr(1) + "\r\n", response_msg);
+            }
+
             return response_msg;
         }
     }
@@ -86,7 +95,7 @@ void CommandHandler::passCmd(Client* client, const IRCMessage* irc_msg, std::vec
     }
     else
     {
-        addResponse(client, ":ircserv 464 " + client->getNickname() + " :Password incorrect\r\n", response);
+        addResponse(client, ":ircserv 464 * " + client->getNickname() + " :Password incorrect\r\n", response);
     }
 }
 

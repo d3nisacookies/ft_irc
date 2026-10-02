@@ -2,29 +2,22 @@
 #include <algorithm>
 
 Client::Client(int fd, const std::string& host)
-    : _status(WAITING_FOR_PASS),
-      _fd(fd),
+    : _fd(fd),
       _host(host),
       _recvBuffer(""),
       _passVerified(false),
       _hasNickname(false),
       _hasUsername(false),
+      _welcomed(false),
       _nickname(""),
       _username(""),
       _channels(),
       _passAttempts(0)
+
 {
 }
 
 Client::~Client(){}
-
-Client::AuthStatus Client::getStatus() const {
-    return this->_status;
-}
-
-void Client::setStatus(AuthStatus newStatus) {
-    this->_status = newStatus;
-}
 
 int Client::getFd() const
 {
@@ -39,6 +32,16 @@ const std::string& Client::getHost() const
 const std::string& Client::getRecvBuffer() const
 {
     return _recvBuffer;
+}
+
+bool Client::isWelcomed() const
+{
+    return (_welcomed);
+}
+
+void Client::setWelcomed(bool welcomed)
+{
+    _welcomed = welcomed;
 }
 
 bool Client::isRegistered() const

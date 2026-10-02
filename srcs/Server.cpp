@@ -1,3 +1,4 @@
+#include "CommandHandler.hpp"
 #include "Server.hpp"
 #include "Client.hpp"
 #include "Channel.hpp"
@@ -103,52 +104,6 @@ bool    Server::nicknameExist( const std::string& new_nick )
     return (it != _clients_byNickname.end());
 }
 
-void    Server::authenticateClient( int client_fd )
-{
-    IRCMessage pass_parser = IRCMessage();
-    IRCMessage user_parser = IRCMessage();
-    Client* client = _clients[client_fd];
-
-    std::string line;
-    while (client->extractLine(line))
-    {
-        if (line.empty())
-            continue;
-        else if (line.find("PASS") != std::string::npos)
-            pass_parser.parse(line);
-        else if (line.find("USER") != std::string::npos)
-            user_parser.parse(line);
-    }
-    if (_clients[client_fd]->getStatus() == Client::WAITING_FOR_PASS)
-    {
-        if (!pass_parser.getParams().empty() && pass_parser.getParams().front() == _password)
-        {    
-            _clients[client_fd]->setStatus(Client::WAITING_FOR_NICK_USER);
-            send(client_fd, SUCCESS_P, sizeof(SUCCESS_P), 0);
-        }
-        else
-        {
-            send(client_fd, WPASS, sizeof(WPASS), 0);
-            return ;
-        }
-    }
-    if (_clients[client_fd]->getStatus() == Client::WAITING_FOR_NICK_USER)
-    {
-        if (!user_parser.getParams().empty())
-        {
-            if (!nicknameExist(user_parser.getParams().front())) 
-            {
-                _clients[client_fd]->setStatus(Client::AUTHENTICATED);
-                _clients[client_fd]->setNickname(user_parser.getParams().front());
-                send(client_fd, SUCCESS_U, sizeof(SUCCESS_U), 0);
-            }    
-            else
-                send(client_fd, UEXIST, sizeof(UEXIST), 0);
-    
-        }
-    }
-}
-
 void    Server::ValidateNewClient( void )
 {
     struct sockaddr_in client_addr;
@@ -158,11 +113,10 @@ void    Server::ValidateNewClient( void )
     if (client_fd != -1)
     {
         fcntl(client_fd, F_SETFL, O_NONBLOCK);
-        send(client_fd, WELCOME, sizeof(WELCOME), 0);
-        send(client_fd, INFO, sizeof(INFO), 0);
+        // send(client_fd, WELCOME, sizeof(WELCOME), 0);
+        // send(client_fd, INFO, sizeof(INFO), 0);
         const char *host = inet_ntoa(client_addr.sin_addr);
         Client *client = new Client(client_fd, host);
-	    client->setStatus(Client::WAITING_FOR_PASS);
         _clients[client_fd] = client;
         genNewPollfd( client_fd );
     } 
@@ -195,22 +149,22 @@ void    Server::handleClient( const int client_fd , size_t &index)
         Client* client = _clients[client_fd];
         client->appendRecvBuffer(std::string(buffer, n));
 
-        if (_clients[client_fd]->getStatus() != Client::AUTHENTICATED)
+        CommandHandler handler(this);
+        std::string line;
+        while (client->extractLine(line))
         {
-            authenticateClient( client_fd );
-            
+            IRCMessage msg(line);
+            std::vector<Response> responses = handler.processCommand(client, &msg);
+
+            for (size_t i = 0; i < responses.size(); ++i)
+            {
+                const Response& r = responses[i];
+                send(r.destination->getFd(), r.message.c_str(), r.message.size(), 0);
+            }
         }
         ++index;
-    // }
-    //     while (client->extractLine(line))
-    //     {
-    //         if (line.empty())
-    //             continue;
-    //         std::cout << "[" << client_fd << "] line: '" << line << "'" << std::endl; //temp
-    //         //buid IRCMessage and give to command Handler.
-    //     }
-    //     ++index;
     }
+
     else
     {
         if (errno == EWOULDBLOCK || errno == EAGAIN)
@@ -281,19 +235,26 @@ const std::string& Server::getPwd() const
 
 Client* Server::findClientFd(int fd)
 {
-    // if cannot find return NULL 
-    // return ;
+    std::map<int, Client*>::iterator it = _clients.find(fd);
+    if (it == _clients.end())
+        return NULL;
+    return it->second;
 }
 
 Client* Server::findClientNickname(std::string name)
 {
-     // if cannot find return NULL 
-    // return ;
+    std::map<std::string, Client*>::iterator it = _clients_byNickname.find(name);
+    if (it == _clients_byNickname.end())
+        return NULL;
+    return it->second;
 }
 
 Channel* Server::findChannel(std::string name)
 {
-    // if cannot find return NULL 
+    std::map<std::string, Channel*>::iterator it = _channels.find(name);
+    if (it == _channels.end())
+        return NULL;
+    return it->second;
 }
 
 void Server::removeChannel(Channel* channel)
