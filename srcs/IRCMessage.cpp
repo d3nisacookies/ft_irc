@@ -10,10 +10,6 @@ IRCMessage::IRCMessage(const std::string& raw)
 }
 
 
-// Notes for AK
-// parser need to reset the _params once done with the command
-// need to handle empty command
-
 bool IRCMessage::isEmpty() const
 {
     if (_command.empty())

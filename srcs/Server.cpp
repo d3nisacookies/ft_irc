@@ -259,7 +259,7 @@ Channel* Server::findChannel(std::string name)
 
 void Server::removeChannel(Channel* channel)
 {
-    
+    (void)channel;
 }
 
 void Server::setClientNickname(Client* client, const std::string& nickname)

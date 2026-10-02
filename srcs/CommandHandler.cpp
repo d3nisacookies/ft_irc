@@ -41,10 +41,13 @@ std::vector<Response> CommandHandler::processCommand(Client* client, const IRCMe
                 client->setWelcomed(true);
                 addResponse(client, ":ircserv 001 " + client->getNickname() + " :Welcome to the IRC Network " + getClientPrefix(client).substr(1) + "\r\n", response_msg);
             }
-
             return response_msg;
         }
     }
+
+    addResponse(client,
+        ":ircserv 421 " + (client->hasNickname() ? client->getNickname() : "*") +
+        " " + irc_msg->getCommand() + " :Unknown command\r\n", response_msg);
     return response_msg;
 }
 
@@ -82,6 +85,15 @@ void CommandHandler::passCmd(Client* client, const IRCMessage* irc_msg, std::vec
     if (parameters.size() != 1 || parameters[0].empty())
     {
         addResponse(client, ":ircserv 461 " + client->getNickname() + " PASS :Not enough parameters\r\n", response);
+        return;
+    }
+
+    if(client->isPassVerified())
+    {
+        addResponse(client,
+            ":ircserv 462 " + client->getNickname() +
+            " :You may not reregister\r\n",
+            response);
         return;
     }
 
@@ -231,8 +243,19 @@ void CommandHandler::joinCmd(Client* client, const IRCMessage* irc_msg, std::vec
         return;
     }
 
+    if(!client->isRegistered())
+    {
+        addResponse(client,
+            ":ircserv 451 " +
+            (client->hasNickname() ? client->getNickname() : "*") +
+            " :You have not registered\r\n",
+            response);
+        return;
+    }
+
     const std::string& channel_name = parameters[0];
     Channel* channel = _server->findChannel(channel_name);
+
 
     if (channel != NULL)
     {
@@ -314,6 +337,16 @@ void CommandHandler::partCmd(Client* client, const IRCMessage* irc_msg, std::vec
         return;
     }
 
+    if(!client->isRegistered())
+    {
+        addResponse(client,
+            ":ircserv 451 " +
+            (client->hasNickname() ? client->getNickname() : "*") +
+            " :You have not registered\r\n",
+            response);
+        return;
+    }
+
     const std::string& channel_name = parameters[0];
     std::string reason;
 
@@ -362,13 +395,25 @@ void CommandHandler::privmsgCmd(Client* client, const IRCMessage* irc_msg, std::
 {
     const std::vector<std::string>& parameters = irc_msg->getParams();
 
-    if (parameters.size() != 2 ||
-        parameters[0].empty() || parameters[1].empty())
+    if (parameters.size() != 2 )
     {
-        addResponse(client, ":ircserv 461 " + client->getNickname() +
-            " PRIVMSG :Not enough parameters\r\n", response);
+        if (parameters[0].empty())
+            addResponse(client, ":ircserv 411 " + client->getNickname() + " PRIVMSG :missing target\r\n", response);
+        else if (parameters[1].empty())
+            addResponse(client, ":ircserv 412" + client->getNickname() + " PRIVMSG :no text/ message\r\n", response);
         return;
     }
+
+    if(!client->isRegistered())
+    {
+        addResponse(client,
+            ":ircserv 451 " +
+            (client->hasNickname() ? client->getNickname() : "*") +
+            " :You have not registered\r\n",
+            response);
+        return;
+    }
+
     const std::string& target = parameters[0];
     const std::string& msg = parameters[1];
     std::string message = getClientPrefix(client) + " PRIVMSG " + target + " :" + msg + "\r\n";
@@ -387,7 +432,7 @@ void CommandHandler::privmsgCmd(Client* client, const IRCMessage* irc_msg, std::
 
         if (!channel->isMember(client))
         {
-            addResponse(client, ":ircserv 442 " + client->getNickname() + " " +
+            addResponse(client, ":ircserv 404 " + client->getNickname() + " " +
                 target + " :You're not on that channel\r\n", response);
             return;
         }
@@ -507,6 +552,16 @@ void CommandHandler::inviteCmd(Client* client, const IRCMessage* irc_msg, std::v
         return;
     }
 
+    if(!client->isRegistered())
+    {
+        addResponse(client,
+            ":ircserv 451 " +
+            (client->hasNickname() ? client->getNickname() : "*") +
+            " :You have not registered\r\n",
+            response);
+        return;
+    }
+
     const std::string& targetNickname = parameters[0];
     const std::string& channelName = parameters[1];
 
@@ -573,6 +628,16 @@ void CommandHandler::topicCmd(Client* client, const IRCMessage* irc_msg, std::ve
     {
         addResponse(client, ":ircserv 461 " + client->getNickname() +
             " TOPIC :Not enough parameters\r\n", response);
+        return;
+    }
+
+    if(!client->isRegistered())
+    {
+        addResponse(client,
+            ":ircserv 451 " +
+            (client->hasNickname() ? client->getNickname() : "*") +
+            " :You have not registered\r\n",
+            response);
         return;
     }
 
@@ -654,6 +719,16 @@ Modes CommandHandler::resolveModes(const std::string& input)
 void CommandHandler::modeCmd(Client* client,
     const IRCMessage* irc_msg, std::vector<Response>& response)
 {
+    if(!client->isRegistered())
+    {
+        addResponse(client,
+            ":ircserv 451 " +
+            (client->hasNickname() ? client->getNickname() : "*") +
+            " :You have not registered\r\n",
+            response);
+        return;
+    }
+
     const std::vector<std::string>& parameters = irc_msg->getParams();
 
     // MODE #channel return current active modes.
