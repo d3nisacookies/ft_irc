@@ -132,12 +132,25 @@ void    Server::ValidateNewClient( void )
 
 void    Server::removeClient(int fd)
 {
-    Client* client = _clients[fd];
-    if (client != NULL) {
-        _clients_byNickname.erase(client->getNickname());
-        _clients.erase(fd);      
-        delete client;
+    std::map<int, Client*>::iterator it = _clients.find(fd);
+    if (it == _clients.end() || it->second == NULL)
+    {
+        std::cout << "Client does not exist" << std::endl;
+        return ;
     }
+    Client  *client = it->second;
+    std::vector<Channel *>channels = client->getChannels();
+    for(std::vector<Channel *>::iterator ch = channels.begin() ; ch != channels.end(); ++ch)
+    {
+        (*ch)->removeMember(client);
+        client->removeChannel(*ch);
+        if ((*ch) ->getMembers().empty())
+            removeChannel(*ch);
+    }
+    if (client->hasNickname())
+        _clients_byNickname.erase(client->getNickname());
+    _clients.erase(it);
+    delete client;
 }
 
 
@@ -267,7 +280,10 @@ Channel* Server::findChannel(std::string name)
 
 void Server::removeChannel(Channel* channel)
 {
-    (void)channel;
+    if (channel == NULL)
+        return ;
+    _channels.erase(channel->getName());
+    delete channel;
 }
 
 void Server::setClientNickname(Client* client, const std::string& nickname)
