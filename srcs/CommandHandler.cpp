@@ -2,6 +2,7 @@
 
 #include <cctype>
 #include <climits>
+#include <strings.h>
 
 CommandHandler::CommandHandler(Server* server) : _server(server) {}
 
@@ -163,10 +164,12 @@ void CommandHandler::nickCmd(Client* client, const IRCMessage* irc_msg, std::vec
     }
 
     if (_server->nicknameExist(nickname) &&
-        nickname != client->getNickname())
+        strcasecmp(nickname.c_str(), client->getNickname().c_str()) != 0)
     {
-        addResponse(client, ":ircserv 433 " + client->getNickname() + " " +
-            nickname + " :Nickname is already in use\r\n", response);
+        addResponse(client,
+            ":ircserv 433 " + client->getNickname() + " " +
+            nickname + " :Nickname is already in use\r\n",
+            response);
         return;
     }
 
@@ -231,19 +234,55 @@ void CommandHandler::userCmd(Client* client, const IRCMessage* irc_msg, std::vec
         " :Username accepted\r\n", response);
 }
 
+
 void CommandHandler::joinCmd(Client* client, const IRCMessage* irc_msg, std::vector<Response>& response)
 {
     const std::vector<std::string>& parameters = irc_msg->getParams();
 
-    if (parameters.size() < 1 || parameters.size() > 2 ||
-        parameters[0].empty() || parameters[0][0] != '#')
+    if (parameters.empty())
     {
-        addResponse(client, ":ircserv 461 " + client->getNickname() +
-            " JOIN :Not enough parameters\r\n", response);
+        addResponse(client,
+            ":ircserv 461 " + client->getNickname() +
+            " JOIN :Not enough parameters\r\n",
+            response);
         return;
     }
 
-    if(!client->isRegistered())
+    // only one channel and optionally one key
+    if (parameters.size() > 2)
+    {
+        addResponse(client,
+            ":ircserv 461 " + client->getNickname() +
+            " JOIN :Too many parameters\r\n",
+            response);
+        return;
+    }
+
+    const std::string& channel_name = parameters[0];
+
+
+    // Valid: #room
+    // invalid: room, ##, #, #room, #other
+    bool validChannel = true;
+
+    if (channel_name.empty() ||
+        channel_name[0] != '#' ||
+        channel_name.size() == 1 ||
+        channel_name.find(',') != std::string::npos)
+    {
+        validChannel = false;
+    }
+
+    if (!validChannel)
+    {
+        addResponse(client,
+            ":ircserv 403 " + client->getNickname() + " " +
+            channel_name + " :No such channel\r\n",
+            response);
+        return;
+    }
+
+    if (!client->isRegistered())
     {
         addResponse(client,
             ":ircserv 451 " +
@@ -253,17 +292,17 @@ void CommandHandler::joinCmd(Client* client, const IRCMessage* irc_msg, std::vec
         return;
     }
 
-    const std::string& channel_name = parameters[0];
     Channel* channel = _server->findChannel(channel_name);
-
 
     if (channel != NULL)
     {
         if (channel->isMember(client))
         {
-            addResponse(client, ":ircserv 443 " + client->getNickname() + " " +
+            addResponse(client,
+                ":ircserv 443 " + client->getNickname() + " " +
                 client->getNickname() + " " + channel_name +
-                " :is already on channel\r\n", response);
+                " :is already on channel\r\n",
+                response);
             return;
         }
 
@@ -272,7 +311,8 @@ void CommandHandler::joinCmd(Client* client, const IRCMessage* irc_msg, std::vec
             if (parameters.size() != 2 ||
                 parameters[1] != channel->getKey())
             {
-                addResponse(client, ":ircserv 475 " + client->getNickname() + " " +
+                addResponse(client,
+                    ":ircserv 475 " + client->getNickname() + " " +
                     channel_name + " :Cannot join channel (+k)\r\n",
                     response);
                 return;
@@ -281,9 +321,10 @@ void CommandHandler::joinCmd(Client* client, const IRCMessage* irc_msg, std::vec
 
         if (channel->isUserLimitEnable() &&
             channel->getMembers().size() >=
-            static_cast<size_t>(channel->getLimit()))
+                static_cast<size_t>(channel->getLimit()))
         {
-            addResponse(client, ":ircserv 471 " + client->getNickname() + " " +
+            addResponse(client,
+                ":ircserv 471 " + client->getNickname() + " " +
                 channel_name + " :Cannot join channel (+l)\r\n",
                 response);
             return;
@@ -291,7 +332,8 @@ void CommandHandler::joinCmd(Client* client, const IRCMessage* irc_msg, std::vec
 
         if (channel->isInviteOnly() && !channel->isInvited(client))
         {
-            addResponse(client, ":ircserv 473 " + client->getNickname() + " " +
+            addResponse(client,
+                ":ircserv 473 " + client->getNickname() + " " +
                 channel_name + " :Cannot join channel (+i)\r\n",
                 response);
             return;

@@ -299,19 +299,19 @@ Example:
 
 Example:
 
-- [ ]  `JOIN room`
-- [ ]  Do not return generic **461**.
-- [ ]  Use the appropriate channel-name error expected by your subject/tester:
-    - [ ]  **403 ERR_NOSUCHCHANNEL**, or
-    - [ ]  **476 ERR_BADCHANMASK**, depending on your implementation/spec.
+- [x]  `JOIN room`
+- [x]  Do not return generic **461**.
+- [x]  Use the appropriate channel-name error expected by your subject/tester:
+    - [x]  **403 ERR_NOSUCHCHANNEL**, or
+    - [x]  **476 ERR_BADCHANMASK**, depending on your implementation/spec.
 
 Also test:
 
-- [ ]  `JOIN #room`
-- [ ]  `JOIN ##room`
-- [ ]  `JOIN #`
-- [ ]  `JOIN #room, #other`
-- [ ]  `JOIN` with no parameters → **461**
+- [x]  `JOIN #room`
+- [x]  `JOIN ##room`
+- [x]  `JOIN #`
+- [x]  `JOIN #room, #other`
+- [x]  `JOIN` with no parameters → **461**
 
 ---
 
@@ -322,18 +322,18 @@ IRC nicknames should be treated case-insensitively for uniqueness.
 Test:
 
 1. Client A:
-    - [ ]  `NICK taken`
-    - [ ]  succeeds
+    - [x]  `NICK taken`
+    - [x]  succeeds
 2. Client B:
-    - [ ]  `NICK TAKEN`
-    - [ ]  must be rejected as already in use.
+    - [x]  `NICK TAKEN`
+    - [x]  must be rejected as already in use.
 
 Also test:
 
-- [ ]  `taken`
-- [ ]  `TAKEN`
-- [ ]  `Taken`
-- [ ]  `tAkEn`
+- [x]  `taken`
+- [x]  `TAKEN`
+- [x]  `Taken`
+- [x]  `tAkEn`
 
 All should collide.
 

@@ -2,6 +2,7 @@
 #include "Server.hpp"
 #include "Client.hpp"
 #include "Channel.hpp"
+#include <strings.h>
 
 const char* Server::InvalidPortException::what() const throw()
 {
@@ -98,10 +99,17 @@ bool    Server::server_listen( void )
     return 1;
 }
 
-bool    Server::nicknameExist( const std::string& new_nick )
+bool Server::nicknameExist(const std::string& new_nick)
 {
-    std::map<std::string, Client*>::const_iterator it = _clients_byNickname.find(new_nick);
-    return (it != _clients_byNickname.end());
+    for (std::map<std::string, Client*>::const_iterator it =
+            _clients_byNickname.begin(); it != _clients_byNickname.end();
+            ++it)
+    {
+        if (strcasecmp(it->first.c_str(), new_nick.c_str()) == 0)
+            return true;
+    }
+
+    return false;
 }
 
 void    Server::ValidateNewClient( void )
