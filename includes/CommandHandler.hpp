@@ -56,4 +56,6 @@ class CommandHandler
         void inviteCmd(Client* client, const IRCMessage* irc_msg, std::vector<Response>& response);
         void topicCmd(Client* client, const IRCMessage* irc_msg, std::vector<Response>& response);
         void modeCmd(Client* client, const IRCMessage* irc_msg, std::vector<Response>& response);
+        void pingCmd(Client* client, const IRCMessage* irc_msg, std::vector<Response>& response);
+        void quitCmd(Client* client, const IRCMessage* irc_msg, std::vector<Response>& response);
 };

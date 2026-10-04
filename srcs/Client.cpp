@@ -9,6 +9,7 @@ Client::Client(int fd, const std::string& host)
       _hasNickname(false),
       _hasUsername(false),
       _welcomed(false),
+      _quitting(false),
       _nickname(""),
       _username(""),
       _channels(),
@@ -37,6 +38,16 @@ const std::string& Client::getRecvBuffer() const
 bool Client::isWelcomed() const
 {
     return (_welcomed);
+}
+
+bool Client::isQuitting() const
+{
+    return _quitting;
+}
+
+void Client::setQuitting(bool quitting)
+{
+    _quitting = quitting;
 }
 
 void Client::setWelcomed(bool welcomed)

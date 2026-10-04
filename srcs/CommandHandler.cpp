@@ -15,10 +15,10 @@ std::vector<Response> CommandHandler::processCommand(Client* client, const IRCMe
     if (irc_msg->isEmpty())
         return response_msg;
 
-    std::string commands[10] = {"PASS", "NICK", "USER", "JOIN", "PART",
-        "PRIVMSG", "KICK", "INVITE", "TOPIC", "MODE"};
+    std::string commands[12] = {"PASS", "NICK", "USER", "JOIN", "PART",
+        "PRIVMSG", "KICK", "INVITE", "TOPIC", "MODE", "PING", "QUIT"};
 
-    void(CommandHandler::*functions[10])
+    void(CommandHandler::*functions[12])
         (Client*, const IRCMessage*, std::vector<Response>&) = {
         &CommandHandler::passCmd,
         &CommandHandler::nickCmd,
@@ -29,10 +29,12 @@ std::vector<Response> CommandHandler::processCommand(Client* client, const IRCMe
         &CommandHandler::kickCmd,
         &CommandHandler::inviteCmd,
         &CommandHandler::topicCmd,
-        &CommandHandler::modeCmd
+        &CommandHandler::modeCmd,
+        &CommandHandler::pingCmd,
+        &CommandHandler::quitCmd
     };
 
-    for (int i = 0; i < 10; i++)
+    for (int i = 0; i < 12; i++)
     {
         if (commands[i] == irc_msg->getCommand())
         {
@@ -50,6 +52,50 @@ std::vector<Response> CommandHandler::processCommand(Client* client, const IRCMe
         ":ircserv 421 " + (client->hasNickname() ? client->getNickname() : "*") +
         " " + irc_msg->getCommand() + " :Unknown command\r\n", response_msg);
     return response_msg;
+}
+
+void CommandHandler::pingCmd(Client* client, const IRCMessage* irc_msg, std::vector<Response>& response)
+{
+    std::vector<std::string> params = irc_msg->getParams();
+
+    if (params.size() == 0 || params[0].empty())
+    {
+        addResponse(client, ":ircserv 409 " + client->getNickname() + ": No origin specified\r\n", response);
+        return ;
+    }
+    std::string token = params[0];
+    addResponse(client, ":ircserv PONG ircserv :" + token + "\r\n", response);
+}
+
+void CommandHandler::quitCmd(Client* client, const IRCMessage* irc_msg, std::vector<Response>& response)
+{
+    std::vector<std::string> params = irc_msg->getParams();
+
+    std::string reason = "Client Quit";
+    if (!params.empty() && !params[0].empty())
+        reason = params[0];
+
+    std::string quitMsg = getClientPrefix(client) + " QUIT :" + reason + "\r\n";
+    std::set<Client *> already_notified;
+    std::vector<Channel*> channels = client->getChannels();
+    for (std::vector<Channel *>::iterator it = channels.begin(); it != channels.end(); ++it)
+    {
+        Channel *channel = *it;
+        std::set<Client *> members = channel->getMembers();
+        for (std::set<Client *>::iterator mb = members.begin(); mb != members.end(); ++mb)
+        {
+            Client* member = *mb;
+            if (member == client)
+                continue;
+            if (already_notified.find(member) != already_notified.end())
+                continue;
+            addResponse(member, quitMsg, response);
+            already_notified.insert(member);
+        }
+    }
+    addResponse(client, "ERROR :Closing link (" + reason + ")\r\n", response);
+    client->setQuitting(true);
+
 }
 
 std::string CommandHandler::getClientPrefix(Client* client)
@@ -483,15 +529,12 @@ void CommandHandler::privmsgCmd(Client* client, const IRCMessage* irc_msg, std::
 
         for (std::set<Client*>::const_iterator it = members.begin(); it != members.end(); ++it)
         {
-            //Do not send the PRIVMSG back to the sender.
             if (*it != client)
                 addResponse(*it, message, response);
         }
 
         return;
     }
-
-    // PRIVMSG to another user.
     Client* targetClient = _server->findClientNickname(target);
 
     if (targetClient == NULL)

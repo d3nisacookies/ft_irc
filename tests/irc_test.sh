@@ -1,20 +1,35 @@
 #!/usr/bin/env bash
 # ft_irc test suite
-# Usage: ./tests/irc_test.sh [port]      (run from the repo root)
+# Usage: ./tests/irc_test.sh [port] [--valgrind]      (run from the repo root)
+#   --valgrind  run the server under valgrind for the whole suite (slower), then
+#               check the shutdown report for memory errors, leaks and open fds.
+#               (or: VALGRIND=1 ./tests/irc_test.sh)
 #
 # Each check prints PASS / FAIL. A FAIL is not always a bug in finished code —
 # some checks cover features that are still on the to-do list (451 gate, PING, ...).
 # Expected replies follow RFC 1459 / 2812 numerics.
 
-PORT=${1:-$((6000 + RANDOM % 2000))}
+USE_VALGRIND=${VALGRIND:-0}
+PORT=""
+for arg in "$@"; do
+    case "$arg" in
+        --valgrind) USE_VALGRIND=1 ;;
+        *)          PORT=$arg ;;
+    esac
+done
+PORT=${PORT:-$((6000 + RANDOM % 2000))}
 PASSWORD="pw"
 HOST=127.0.0.1
 BIN=./ircserv
 WAIT=0.3            # seconds to wait for replies
+START_TRIES=20      # x 0.1s to wait for the server to accept connections
 LOGDIR=$(mktemp -d)
+if [ "$USE_VALGRIND" = 1 ]; then WAIT=0.8; START_TRIES=200; fi   # valgrind is ~20x slower
 
 GREEN=$'\e[32m'; RED=$'\e[31m'; YELLOW=$'\e[33m'; BOLD=$'\e[1m'; RESET=$'\e[0m'
 pass_count=0; fail_count=0; FAILED=()
+
+trap '' PIPE       # writing to a crashed server must not kill the test script
 
 declare -A FD      # client name -> file descriptor
 declare -A LAST    # client name -> output received by the last recv
@@ -28,9 +43,15 @@ ko()      { fail_count=$((fail_count + 1)); FAILED+=("$1"); printf '  %sFAIL%s %
 
 SERVER_PID=""
 start_server() {
-    "$BIN" "$PORT" "$PASSWORD" >"$LOGDIR/server.log" 2>&1 &
+    if [ "$USE_VALGRIND" = 1 ]; then
+        valgrind --leak-check=full --show-leak-kinds=all --track-fds=yes \
+            --log-file="$LOGDIR/valgrind.%p.log" \
+            "$BIN" "$PORT" "$PASSWORD" >>"$LOGDIR/server.log" 2>&1 &
+    else
+        "$BIN" "$PORT" "$PASSWORD" >>"$LOGDIR/server.log" 2>&1 &
+    fi
     SERVER_PID=$!
-    for _ in $(seq 1 20); do
+    for _ in $(seq 1 "$START_TRIES"); do
         (exec 3<>/dev/tcp/$HOST/$PORT) 2>/dev/null && return 0
         sleep 0.1
     done
@@ -500,8 +521,30 @@ expect_not a " 433 " "nick of a vanished client is released"
 close_all
 check_alive "robustness"
 
-# ================================================================== summary
+# ---------------------------------------------------------------- valgrind report
+# The server is stopped with SIGTERM (graceful: the signal handler ends poll() and
+# ~Server() runs), then valgrind's exit report is checked.
 stop_server
+if [ "$USE_VALGRIND" = 1 ]; then
+    section "Valgrind (server run under memcheck)"
+    vg_logs=("$LOGDIR"/valgrind.*.log)
+    if [ ! -e "${vg_logs[0]}" ]; then ko "valgrind produced a report" "no log in $LOGDIR"
+    else
+        vg=$(cat "${vg_logs[@]}")
+        if grep -q "ERROR SUMMARY: 0 errors" <<<"$vg" && ! grep -qE "ERROR SUMMARY: [1-9]" <<<"$vg"; then
+            ok "no invalid reads/writes or use of freed memory"
+        else ko "no invalid reads/writes or use of freed memory" "$(grep -E 'ERROR SUMMARY|Invalid|uninitialised' <<<"$vg" | head -3 | tr '\n' '|')"; fi
+        if grep -q "All heap blocks were freed" <<<"$vg"; then ok "all heap blocks freed (no leaks)"
+        else ko "all heap blocks freed (no leaks)" "$(grep -E 'definitely|indirectly|possibly|still reachable' <<<"$vg" | head -4 | tr '\n' '|')"; fi
+        open_fds=$(grep -cE "^==[0-9]+== Open (file descriptor|AF_INET|AF_UNIX)" <<<"$vg")
+        inherited=$(grep -c "inherited from parent" <<<"$vg")
+        if [ $((open_fds - inherited)) -le 0 ]; then ok "no file descriptors left open at exit"
+        else ko "no file descriptors left open at exit" "$((open_fds - inherited)) fd(s) not closed (see valgrind log)"; fi
+    fi
+    printf '  valgrind logs: %s/valgrind.*.log\n' "$LOGDIR"
+fi
+
+# ================================================================== summary
 total=$((pass_count + fail_count))
 printf '\n%s== Summary ==%s\n' "$BOLD" "$RESET"
 printf '  %s%d passed%s, %s%d failed%s, %d total\n' "$GREEN" "$pass_count" "$RESET" "$RED" "$fail_count" "$RESET" "$total"

@@ -60,6 +60,7 @@ class Server
         void addChannel(std::string name, Channel* channel);
         void removeChannel(Channel* channel); // if empty, remove channel
         Channel* findChannel(std::string name);
+        void disconnect(int fd, size_t index);
 
 
         const int& getPort() const;

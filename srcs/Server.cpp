@@ -1,8 +1,20 @@
-#include "CommandHandler.hpp"
+  #include "CommandHandler.hpp"
 #include "Server.hpp"
 #include "Client.hpp"
 #include "Channel.hpp"
+#include <signal.h>
+#include <csignal>
 #include <strings.h>
+#include <cstring>
+#include <cerrno>
+
+volatile sig_atomic_t g_running = 1;
+
+static void handleSignal(int num)
+{
+    (void)num;
+    g_running = 0;
+}
 
 const char* Server::InvalidPortException::what() const throw()
 {
@@ -153,6 +165,12 @@ void    Server::removeClient(int fd)
     delete client;
 }
 
+void    Server::disconnect(int fd, size_t index)
+{
+    removeClient(fd);
+    close(fd);
+    _all_fds.erase(_all_fds.begin() + index);
+}
 
 void    Server::handleClient( const int client_fd , size_t &index)
 {
@@ -160,10 +178,11 @@ void    Server::handleClient( const int client_fd , size_t &index)
     int n = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
     if (n == 0)
     {
-        std::cout << _clients[client_fd]->getNickname() << " just disconnected." << std::endl;
-        removeClient(client_fd);
-        close(client_fd);
-        _all_fds.erase(_all_fds.begin() + index);
+        if (_clients[client_fd]->hasNickname())
+            std::cout << _clients[client_fd]->getNickname() << " just disconnected." << std::endl;
+        else
+            std::cout << _clients[client_fd]->getFd() << " has disconnected." << std::endl; 
+        disconnect(client_fd, index);
     }
     else if (n > 0)
     {
@@ -182,10 +201,12 @@ void    Server::handleClient( const int client_fd , size_t &index)
                 const Response& r = responses[i];
                 send(r.destination->getFd(), r.message.c_str(), r.message.size(), 0);
             }
+            if (client->isQuitting())
+                break;
         }
-        ++index;
+        if (client->isQuitting())
+            disconnect(client_fd, index);
     }
-
     else
     {
         if (errno == EWOULDBLOCK || errno == EAGAIN)
@@ -193,21 +214,20 @@ void    Server::handleClient( const int client_fd , size_t &index)
         else
         {
             std::cout << "Client error: " << client_fd << std::endl;
-            delete _clients[client_fd];
-            _clients.erase(client_fd);
-            close(client_fd);
-            _all_fds.erase(_all_fds.begin() + index);
+            disconnect(client_fd, index);
         }
     }
 }
 
 void    Server::wait_poll( void )
 {
-    while (true)
+    while (g_running)
     {
-        int ret = poll(_all_fds.data(), _all_fds.size(), -1);
+        int ret = poll(_all_fds.data(), _all_fds.size(), 1000);
         if (ret == -1)
         {
+            if (errno == EINTR)
+                continue;
             perror("poll");
             break;
         }
@@ -237,17 +257,52 @@ void Server::addChannel(std::string name, Channel* channel)
 }
 
 
+
+static void installSignalHandlers()
+{
+    struct sigaction sa;
+
+    std::memset(&sa, 0, sizeof(sa));
+    sa.sa_handler = handleSignal;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+
+    sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGTERM, &sa, NULL);
+
+    // a send() to a closed socket must not kill the server
+    signal(SIGPIPE, SIG_IGN);
+}
+
+
+
 bool    Server::start( void )
 {
     if (!(bind_socket()))
         return false;
     if (!(server_listen()))
         return false;
+    installSignalHandlers();
     wait_poll();
     return true;
 }
 
-Server::~Server() {}
+Server::~Server() 
+{
+    while (!(_clients.empty()))
+    {
+        int fd = _clients.begin()->first;
+        close(fd);
+        removeClient(fd);
+    }
+    for (std::map<std::string, Channel *>::iterator it = _channels.begin(); it != _channels.end(); ++it)
+    {
+        delete it->second;
+    }
+    _channels.clear();
+    if (_server_fd != -1)
+        close(_server_fd);
+}
 
 const std::string& Server::getPwd() const
 {

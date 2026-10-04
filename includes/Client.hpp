@@ -18,6 +18,7 @@ class Client
         bool                        _hasNickname;
         bool                        _hasUsername;
         bool                        _welcomed;
+        bool                        _quitting;
         
         std::string                 _nickname;
         std::string                 _username;
@@ -41,6 +42,7 @@ class Client
         bool extractLine(std::string& line);
         bool isWelcomed() const;
         void setWelcomed(bool welcomed);
+        bool isQuitting() const;
 
         const std::string& getNickname() const;
         const std::string& getUsername() const;
@@ -55,6 +57,7 @@ class Client
         void setPassVerified(bool verified);
         void setNickname(const std::string& name);
         void setUsername(const std::string& name);
+        void setQuitting(bool quitting);
 
         void addChannel(Channel *channel);
         void removeChannel(Channel *channel);
