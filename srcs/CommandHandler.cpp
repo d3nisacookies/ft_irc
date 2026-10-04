@@ -15,6 +15,11 @@ std::vector<Response> CommandHandler::processCommand(Client* client, const IRCMe
     if (irc_msg->isEmpty())
         return response_msg;
 
+    // CAP is not required by the project.
+    // Ignore CAP LS sent automatically by clients such as irssi.
+    if (irc_msg->getCommand() == "CAP")
+        return response_msg;
+    
     std::string commands[12] = {"PASS", "NICK", "USER", "JOIN", "PART",
         "PRIVMSG", "KICK", "INVITE", "TOPIC", "MODE", "PING", "QUIT"};
 
@@ -483,12 +488,21 @@ void CommandHandler::privmsgCmd(Client* client, const IRCMessage* irc_msg, std::
 {
     const std::vector<std::string>& parameters = irc_msg->getParams();
 
-    if (parameters.size() != 2 )
+    // no target
+    if (parameters.empty())
     {
-        if (parameters[0].empty())
-            addResponse(client, ":ircserv 411 " + client->getNickname() + " PRIVMSG :missing target\r\n", response);
-        else if (parameters[1].empty())
-            addResponse(client, ":ircserv 412" + client->getNickname() + " PRIVMSG :no text/ message\r\n", response);
+        addResponse(client, ":ircserv 411 " + client->getNickname() +
+            " PRIVMSG : No recipient given\r\n", response);
+        return;
+    }
+
+    // Target exists, but no message
+    if (parameters.size() < 2 || parameters[1].empty())
+    {
+        addResponse(client,
+            ":ircserv 412 " + client->getNickname() +
+            " :No text to send\r\n",
+            response);
         return;
     }
 
@@ -535,6 +549,7 @@ void CommandHandler::privmsgCmd(Client* client, const IRCMessage* irc_msg, std::
 
         return;
     }
+    // PRIVMSG to another client
     Client* targetClient = _server->findClientNickname(target);
 
     if (targetClient == NULL)
@@ -572,7 +587,7 @@ void CommandHandler::kickCmd(Client* client,
 
     if (channel == NULL)
     {
-        addResponse(client, ":ircserv 403 " + client->getNickname() + " " +
+        addResponse(client, ":ircserv 451 " + client->getNickname() + " " +
             channelName + " :No such channel\r\n", response);
         return;
     }
