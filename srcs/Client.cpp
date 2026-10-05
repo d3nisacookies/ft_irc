@@ -40,6 +40,21 @@ bool Client::isWelcomed() const
     return (_welcomed);
 }
 
+const std::string& Client::getSendBuffer() const
+{
+    return _sendBuffer;
+}
+
+void Client::appendSendBuffer(const std::string& data)
+{
+    _sendBuffer += data;
+}
+
+void Client::consumeSendBuffer(size_t n)
+{
+    _sendBuffer.erase(0, n);
+}
+
 bool Client::isQuitting() const
 {
     return _quitting;

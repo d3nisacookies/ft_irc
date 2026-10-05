@@ -13,6 +13,7 @@ class Client
         int                         _fd;
         std::string                 _host;
         std::string                 _recvBuffer;
+        std::string                 _sendBuffer;
 
         bool                        _passVerified;
         bool                        _hasNickname;
@@ -34,6 +35,9 @@ class Client
         int getFd() const;
         const std::string& getHost() const;
         const std::string& getRecvBuffer()const;
+        const std::string& getSendBuffer() const;
+        void appendSendBuffer(const std::string& data);
+        void consumeSendBuffer(size_t n);
 
         bool isRegistered() const;
         bool isPassVerified() const;

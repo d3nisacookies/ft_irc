@@ -133,8 +133,6 @@ void    Server::ValidateNewClient( void )
     if (client_fd != -1)
     {
         fcntl(client_fd, F_SETFL, O_NONBLOCK);
-        // send(client_fd, WELCOME, sizeof(WELCOME), 0);
-        // send(client_fd, INFO, sizeof(INFO), 0);
         const char *host = inet_ntoa(client_addr.sin_addr);
         Client *client = new Client(client_fd, host);
         _clients[client_fd] = client;
@@ -199,41 +197,78 @@ void    Server::handleClient( const int client_fd , size_t &index)
             for (size_t i = 0; i < responses.size(); ++i)
             {
                 const Response& r = responses[i];
-                send(r.destination->getFd(), r.message.c_str(), r.message.size(), 0);
+                r.destination->appendSendBuffer(r.message); // sent later, when poll() reports POLLOUT
             }
             if (client->isQuitting())
                 break;
         }
-        if (client->isQuitting())
-            disconnect(client_fd, index);
+        // a quitting client is removed once its output has been flushed (flushClient)
+        ++index;
     }
     else
     {
-        if (errno == EWOULDBLOCK || errno == EAGAIN)
-            ++index;
-        else
-        {
-            std::cout << "Client error: " << client_fd << std::endl;
-            disconnect(client_fd, index);
-        }
+        std::cout << "Client error: " << client_fd << std::endl;
+        disconnect(client_fd, index);
     }
+}
+
+// One send() per POLLOUT, never in a loop. Returns false when the client must be removed.
+bool    Server::flushClient(int fd)
+{
+    Client* client = _clients[fd];
+    const std::string& buf = client->getSendBuffer();
+
+    int n = send(fd, buf.c_str(), buf.size(), 0);
+    if (n <= 0)
+        return false;
+    client->consumeSendBuffer(n);
+    if (client->isQuitting() && client->getSendBuffer().empty())
+        return false;
+    return true;
 }
 
 void    Server::wait_poll( void )
 {
     while (g_running)
     {
+        // only ask for POLLOUT while a client has something waiting to be sent
+        for (size_t i = 0; i < _all_fds.size(); ++i)
+        {
+            Client* client = findClientFd(_all_fds[i].fd);   // NULL for the listening socket
+            _all_fds[i].events = POLLIN;
+            if (client && !client->getSendBuffer().empty())
+                _all_fds[i].events |= POLLOUT;
+            if (client && client->isQuitting())
+                _all_fds[i].events = POLLOUT;                // stop reading from it
+        }
+
         int ret = poll(_all_fds.data(), _all_fds.size(), 1000);
         if (ret == -1)
         {
-            if (errno == EINTR)
+            if (!g_running)
                 continue;
             perror("poll");
             break;
         }
         for (size_t i = 0; i < _all_fds.size();)
         {
-            if (_all_fds[i].revents & POLLIN)
+            int fd = _all_fds[i].fd;
+            short rev = _all_fds[i].revents;
+
+            if (rev & POLLOUT)
+            {
+                if (!flushClient(fd))
+                {
+                    disconnect(fd, i);
+                    continue;                // slot i was erased: do not ++i
+                }
+            }
+            if ((rev & (POLLHUP | POLLERR | POLLNVAL)) && !(rev & POLLIN))
+            {
+                disconnect(fd, i);
+                continue;
+            }
+            if (rev & POLLIN)
             {
                 if ( _all_fds[i].fd == _server_fd)
                 {

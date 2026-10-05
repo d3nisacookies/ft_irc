@@ -62,6 +62,7 @@ class Server
         void removeChannel(Channel* channel); // if empty, remove channel
         Channel* findChannel(std::string name);
         void disconnect(int fd, size_t index);
+        bool flushClient(int fd);
 
 
         const std::string& getPwd() const;
