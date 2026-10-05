@@ -39,7 +39,6 @@ The server supports:
 * Graceful client disconnection
 * Non-blocking I/O
 * Single `poll()`-based event loop
-* Handling of partial TCP packets and buffered IRC messages
 
 ## IRC Commands
 
@@ -778,12 +777,14 @@ The following resources were useful for understanding the concepts required for 
 * **RFC 1459** — Internet Relay Chat Protocol
 
 These RFCs provide information about IRC commands, messages, channels, users and client/server communication.
+https://en.wikipedia.org/wiki/IRC
 
 ### C++ Documentation
 
 * C++98 language and standard library documentation
 * C++ socket programming references
 * Unix/Linux system call documentation
+https://devdocs.io/cpp/
 
 ### Network Programming
 
@@ -848,6 +849,22 @@ Testing should also include:
 * User limits
 * Operator privileges
 * Topic restrictions
+
+`hexchat`
+To connect HexChat to your IRC server running locally:
+1. Open HexChat to bring up the Network List (Ctrl + N).
+2. Click Add and name your network (e.g., ft_irc).
+3. Click Edit to configure the network settings:
+	• Server: Change newserver/6667 to localhost/6667 (or your specific port).
+	• Password: If your server requires a password, enter it in the Server password field.
+	• Nicknames: Set your preferred nicknames in the User Information section.
+4. Click Close, then click Connect.
+
+* /nick [new_nick] – Changes your current nickname. Tests your NICK command.
+* /join #[channel_name] – Joins a channel. Tests your JOIN and MODE commands.
+* /msg [target] [message] – Sends a private message to a user or channel. Tests your PRIVMSG command.
+* /part #[channel_name] – Leaves a specific channel. Tests your PART command.
+* /quit [reason] – Disconnects from the server. Tests your QUIT command.
 
 ## IRC Commands & Usage
 

@@ -48,6 +48,7 @@ class Server
         void    wait_poll( void );
         bool    bind_socket( void );
         void    ValidateNewClient( void );
+        
         // Client management
         bool nicknameExist(  const std::string& new_nick );
         void handleClient( const int client_fd , size_t &index );
@@ -63,10 +64,7 @@ class Server
         void disconnect(int fd, size_t index);
 
 
-        const int& getPort() const;
         const std::string& getPwd() const;
-
-        void setPwd(std::string password);
 
         class InvalidPortException : public std::exception
         {
